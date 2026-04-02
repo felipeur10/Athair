@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Athair - Respira</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400&display=swap');
+        body { font-family: 'Inter', sans-serif; overflow: hidden; }
+        .bg-transition { transition: background-color 5.5s ease-in-out; }
+        .orb-transition { transition: all 5.5s ease-in-out; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function AthairApp() {
+            const [screen, setScreen] = useState('menu'); // menu, exercise, end
+            const [phase, setPhase] = useState('Inhala');
+            const [timeLeft, setTimeLeft] = useState(300); // 5 minutos
+            const audioRef = useRef(null);
+
+            // Lógica del ejercicio
+            useEffect(() => {
+                let timer;
+                let breathInterval;
+
+                if (screen === 'exercise') {
+                    // Temporizador total (5 min)
+                    timer = setInterval(() => {
+                        setTimeLeft(prev => {
+                            if (prev <= 1) {
+                                setScreen('end');
+                                return 0;
+                            }
+                            return prev - 1;
+                        });
+                    }, 1000);
+
+                    // Ritmo de Nestor (5.5s)
+                    breathInterval = setInterval(() => {
+                        setPhase(prev => (prev === 'Inhala' ? 'Exhala' : 'Inhala'));
+                    }, 5500);
+                }
+
+                return () => {
+                    clearInterval(timer);
+                    clearInterval(breathInterval);
+                };
+            }, [screen]);
+
+            // Al terminar, sonar música
+            useEffect(() => {
+                if (screen === 'end' && audioRef.current) {
+                    audioRef.current.play();
+                }
+            }, [screen]);
+
+            // Formato de tiempo (MM:SS)
+            const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+
+            return (
+                <div className={`h-screen w-full flex flex-col items-center justify-between p-10 bg-transition 
+                    ${screen === 'exercise' ? (phase === 'Inhala' ? 'bg-blue-50' : 'bg-green-50') : 'bg-stone-50'}`}>
+                    
+                    {/* Audio oculto */}
+                    <audio ref={audioRef} src="musica.mp3" />
+
+                    {/* Header */}
+                    <header className="text-center mt-4">
+                        <h1 className="text-3xl font-extralight tracking-[0.5em] text-stone-400 uppercase">Athair</h1>
+                        {screen === 'exercise' && (
+                            <p className="text-stone-300 text-xs mt-2 tracking-widest">{formatTime(timeLeft)}</p>
+                        )}
+                    </header>
+
+                    {/* Contenido Principal */}
+                    <main className="flex-1 flex items-center justify-center w-full">
+                        {screen === 'menu' && (
+                            <div className="text-center animate-fade-in">
+                                <p className="text-stone-400 italic mb-10 font-light">"Sincroniza tu ritmo con la naturaleza"</p>
+                                <button 
+                                    onClick={() => setScreen('exercise')}
+                                    className="px-10 py-4 border border-stone-200 rounded-full bg-white/50 backdrop-blur-md text-stone-500 tracking-widest uppercase text-sm hover:bg-white transition-all shadow-sm"
+                                >
+                                    Comenzar Sesión
+                                </button>
+                                <p className="mt-8 text-[10px] text-stone-300 uppercase tracking-widest">Técnica de 5.5 segundos</p>
+                            </div>
+                        )}
+
+                        {screen === 'exercise' && (
+                            <div className="relative flex items-center justify-center">
+                                {/* El Orbe */}
+                                <div className={`orb-transition rounded-full bg-white shadow-2xl blur-3xl opacity-40 
+                                    ${phase === 'Inhala' ? 'w-64 h-64 scale-125' : 'w-40 h-40 scale-100'}`}>
+                                </div>
+                                <p className="absolute text-stone-400 tracking-[0.6em] uppercase font-light text-xl">
+                                    {phase}
+                                </p>
+                            </div>
+                        )}
+
+                        {screen === 'end' && (
+                            <div className="text-center animate-pulse">
+                                <h2 className="text-2xl font-extralight italic text-stone-500">Nos vemos pronto.</h2>
+                                <button 
+                                    onClick={() => {setScreen('menu'); setTimeLeft(300);}}
+                                    className="mt-12 text-[10px] text-stone-300 uppercase tracking-[0.3em]"
+                                >
+                                    Volver al inicio
+                                </button>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="text-[10px] tracking-widest text-stone-300 uppercase">
+                        Inspirado en James Nestor
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AthairApp />);
+    </script>
+</body>
+</html>
