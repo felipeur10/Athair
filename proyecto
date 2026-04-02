@@ -1,0 +1,19 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white font-sans p-6">
+  
+  <header class="mt-10 mb-12 text-center opacity-80">
+    <h1 class="text-4xl font-light tracking-widest uppercase">Athair</h1>
+    <p class="text-sm mt-2 font-light italic text-blue-200">Respira para cambiar cómo te sientes</p>
+  </header>
+
+  <div class="grid gap-6">
+    <button class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-3xl text-left active:scale-95 transition-all">
+      <h2 class="text-xl font-medium">Equilibrio</h2>
+      <p class="text-sm opacity-70">Sincroniza tu corazón y tu mente.</p>
+    </button>
+    
+    <button class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-3xl text-left active:scale-95 transition-all">
+      <h2 class="text-xl font-medium">Calma</h2>
+      <p class="text-sm opacity-70">Neutraliza el estrés en momentos de tensión.</p>
+    </button>
+  </div>
+</div>
