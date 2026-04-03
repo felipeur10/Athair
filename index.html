@@ -9,10 +9,12 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400&display=swap');
-        body { font-family: 'Inter', sans-serif; overflow: hidden; }
-        .bg-transition { transition: background-color 5.5s ease-in-out; }
-        .orb-transition { transition: all 5.5s ease-in-out; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400&display=swap');
+        body { font-family: 'Inter', sans-serif; overflow: hidden; background-color: #f5f5f4; }
+        .bg-transition { transition: background-color 3s ease; }
+        .orb { transition: transform 5.5s ease-in-out, opacity 3s ease; }
+        .fade-in { animation: fadeIn 1.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -21,109 +23,136 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
+        const EXERCISES = [
+            { 
+                id: 'coherente', 
+                name: 'Coherente', 
+                desc: 'Equilibra el corazón.', 
+                instr: 'Inhala y exhala suavemente. El ritmo de oro de la salud.',
+                rhythm: [ {type: 'Inhala', time: 5500}, {type: 'Exhala', time: 5500} ]
+            },
+            { 
+                id: 'caja', 
+                name: 'Respiración de Caja', 
+                desc: 'Calma bajo presión.', 
+                instr: 'Usada por Navy SEALs para neutralizar el estrés.',
+                rhythm: [ {type: 'Inhala', time: 4000}, {type: 'Retén', time: 4000}, {type: 'Exhala', time: 4000}, {type: 'Retén', time: 4000} ]
+            },
+            { 
+                id: '478', 
+                name: 'Técnica 4-7-8', 
+                desc: 'Para dormir mejor.', 
+                instr: 'Relaja el sistema nervioso profundamente antes de descansar.',
+                rhythm: [ {type: 'Inhala', time: 4000}, {type: 'Retén', time: 7000}, {type: 'Exhala', time: 8000} ]
+            },
+            { 
+                id: 'nadi', 
+                name: 'Nadi Shodhana', 
+                desc: 'Claridad mental.', 
+                instr: 'Alterna fosas: tapa derecha e inhala izquierda, tapa izquierda y exhala derecha.',
+                rhythm: [ {type: 'Inhala', time: 6000}, {type: 'Exhala', time: 6000} ]
+            }
+        ];
+
         function AthairApp() {
-            const [screen, setScreen] = useState('menu'); // menu, exercise, end
-            const [phase, setPhase] = useState('Inhala');
-            const [timeLeft, setTimeLeft] = useState(300); // 5 minutos
-            const audioRef = useRef(null);
+            const [screen, setScreen] = useState('menu');
+            const [selectedEx, setSelectedEx] = useState(null);
+            const [phaseIdx, setPhaseIdx] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(300);
+            const ambientAudio = useRef(null);
+            const finalAudio = useRef(null);
 
-            // Lógica del ejercicio
+            // Manejo de fases de respiración
             useEffect(() => {
-                let timer;
-                let breathInterval;
-
-                if (screen === 'exercise') {
-                    // Temporizador total (5 min)
-                    timer = setInterval(() => {
-                        setTimeLeft(prev => {
-                            if (prev <= 1) {
-                                setScreen('end');
-                                return 0;
-                            }
-                            return prev - 1;
-                        });
-                    }, 1000);
-
-                    // Ritmo de Nestor (5.5s)
-                    breathInterval = setInterval(() => {
-                        setPhase(prev => (prev === 'Inhala' ? 'Exhala' : 'Inhala'));
-                    }, 5500);
+                if (screen === 'exercise' && selectedEx) {
+                    const currentPhase = selectedEx.rhythm[phaseIdx];
+                    const timer = setTimeout(() => {
+                        setPhaseIdx((phaseIdx + 1) % selectedEx.rhythm.length);
+                    }, currentPhase.time);
+                    return () => clearTimeout(timer);
                 }
+            }, [screen, phaseIdx, selectedEx]);
 
-                return () => {
-                    clearInterval(timer);
-                    clearInterval(breathInterval);
-                };
-            }, [screen]);
-
-            // Al terminar, sonar música
+            // Temporizador de 5 minutos y audio
             useEffect(() => {
-                if (screen === 'end' && audioRef.current) {
-                    audioRef.current.play();
+                let mainTimer;
+                if (screen === 'exercise' && timeLeft > 0) {
+                    if (ambientAudio.current) {
+                        ambientAudio.current.volume = 0.4;
+                        ambientAudio.current.play();
+                    }
+                    mainTimer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+                } else if (timeLeft === 0) {
+                    setScreen('end');
+                    if (ambientAudio.current) ambientAudio.current.pause();
+                    if (finalAudio.current) {
+                        finalAudio.current.volume = 0.4; // Mismo volumen que ambiente
+                        finalAudio.current.play();
+                    }
                 }
-            }, [screen]);
+                return () => clearInterval(mainTimer);
+            }, [screen, timeLeft]);
 
-            // Formato de tiempo (MM:SS)
-            const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+            const startExercise = (ex) => {
+                setSelectedEx(ex);
+                setPhaseIdx(0);
+                setTimeLeft(300);
+                setScreen('exercise');
+            };
 
             return (
-                <div className={`h-screen w-full flex flex-col items-center justify-between p-10 bg-transition 
-                    ${screen === 'exercise' ? (phase === 'Inhala' ? 'bg-blue-50' : 'bg-green-50') : 'bg-stone-50'}`}>
+                <div className={`h-screen w-full flex flex-col items-center justify-between p-8 bg-transition 
+                    ${screen === 'exercise' ? (selectedEx.rhythm[phaseIdx].type === 'Inhala' ? 'bg-blue-50' : 'bg-green-50') : 'bg-stone-50'}`}>
                     
-                    {/* Audio oculto */}
-                    <audio ref={audioRef} src="musica.mp3" />
+                    <audio ref={ambientAudio} src="naturaleza.mp3" loop />
+                    <audio ref={finalAudio} src="musica.mp3" />
 
-                    {/* Header */}
                     <header className="text-center mt-4">
-                        <h1 className="text-3xl font-extralight tracking-[0.5em] text-stone-400 uppercase">Athair</h1>
+                        <h1 className="text-3xl font-thin tracking-[0.4em] text-stone-400 uppercase">Athair</h1>
                         {screen === 'exercise' && (
-                            <p className="text-stone-300 text-xs mt-2 tracking-widest">{formatTime(timeLeft)}</p>
+                            <p className="text-stone-300 text-[10px] mt-2 tracking-widest uppercase">
+                                {selectedEx.name} • {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                            </p>
                         )}
                     </header>
 
-                    {/* Contenido Principal */}
-                    <main className="flex-1 flex items-center justify-center w-full">
+                    <main className="flex-1 flex items-center justify-center w-full max-w-md">
                         {screen === 'menu' && (
-                            <div className="text-center animate-fade-in">
-                                <p className="text-stone-400 italic mb-10 font-light">"Sincroniza tu ritmo con la naturaleza"</p>
-                                <button 
-                                    onClick={() => setScreen('exercise')}
-                                    className="px-10 py-4 border border-stone-200 rounded-full bg-white/50 backdrop-blur-md text-stone-500 tracking-widest uppercase text-sm hover:bg-white transition-all shadow-sm"
-                                >
-                                    Comenzar Sesión
-                                </button>
-                                <p className="mt-8 text-[10px] text-stone-300 uppercase tracking-widest">Técnica de 5.5 segundos</p>
+                            <div className="grid gap-4 w-full fade-in">
+                                {EXERCISES.map(ex => (
+                                    <button key={ex.id} onClick={() => startExercise(ex)}
+                                        className="text-left p-6 rounded-3xl bg-white/40 border border-white/60 backdrop-blur-sm hover:bg-white/80 transition-all shadow-sm group">
+                                        <h2 className="text-stone-500 font-light tracking-wide text-lg">{ex.name}</h2>
+                                        <p className="text-stone-400 text-xs mt-1">{ex.desc}</p>
+                                        <p className="text-stone-300 text-[10px] mt-3 opacity-0 group-hover:opacity-100 transition-opacity italic">{ex.instr}</p>
+                                    </button>
+                                ))}
                             </div>
                         )}
 
                         {screen === 'exercise' && (
-                            <div className="relative flex items-center justify-center">
-                                {/* El Orbe */}
-                                <div className={`orb-transition rounded-full bg-white shadow-2xl blur-3xl opacity-40 
-                                    ${phase === 'Inhala' ? 'w-64 h-64 scale-125' : 'w-40 h-40 scale-100'}`}>
+                            <div className="flex flex-col items-center">
+                                <div className={`orb rounded-full bg-white shadow-[0_0_80px_rgba(255,255,255,0.9)] blur-2xl opacity-60
+                                    ${selectedEx.rhythm[phaseIdx].type === 'Inhala' ? 'scale-[1.8]' : 
+                                      selectedEx.rhythm[phaseIdx].type === 'Exhala' ? 'scale-[0.8]' : 'scale-[1.3]'}`}
+                                    style={{ transitionDuration: `${selectedEx.rhythm[phaseIdx].time}ms` }}>
                                 </div>
-                                <p className="absolute text-stone-400 tracking-[0.6em] uppercase font-light text-xl">
-                                    {phase}
+                                <p className="absolute text-stone-400 tracking-[0.5em] uppercase font-light text-xl">
+                                    {selectedEx.rhythm[phaseIdx].type}
                                 </p>
                             </div>
                         )}
 
                         {screen === 'end' && (
-                            <div className="text-center animate-pulse">
-                                <h2 className="text-2xl font-extralight italic text-stone-500">Nos vemos pronto.</h2>
-                                <button 
-                                    onClick={() => {setScreen('menu'); setTimeLeft(300);}}
-                                    className="mt-12 text-[10px] text-stone-300 uppercase tracking-[0.3em]"
-                                >
-                                    Volver al inicio
-                                </button>
+                            <div className="text-center fade-in">
+                                <h2 className="text-3xl font-thin italic text-stone-400 mb-8">Nos vemos pronto.</h2>
+                                <button onClick={() => setScreen('menu')} className="text-[10px] text-stone-300 uppercase tracking-widest border-b border-stone-200 pb-1">Volver al inicio</button>
                             </div>
                         )}
                     </main>
 
-                    {/* Footer */}
-                    <footer className="text-[10px] tracking-widest text-stone-300 uppercase">
-                        Inspirado en James Nestor
+                    <footer className="mb-4 text-[9px] tracking-[0.2em] text-stone-300 uppercase text-center leading-loose">
+                        {screen === 'exercise' ? selectedEx.instr : "Diseñado para el bienestar de la familia"}
                     </footer>
                 </div>
             );
