@@ -9,11 +9,17 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400&display=swap');
-        body { font-family: 'Inter', sans-serif; overflow: hidden; background-color: #f5f5f4; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; overflow: hidden; background-color: #f5f5f4; color: #44403c; }
         .bg-transition { transition: background-color 3s ease; }
-        .orb { transition: transform 5.5s ease-in-out, opacity 3s ease; }
-        .fade-in { animation: fadeIn 1.5s ease-in; }
+        
+        /* Animación fluida para el círculo pulmonar */
+        .breathing-circle {
+            transition: transform cubic-bezier(0.45, 0.05, 0.55, 0.95), border-width 2s ease;
+            will-change: transform;
+        }
+        
+        .fade-in { animation: fadeIn 1s ease-in; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
@@ -29,28 +35,37 @@
                 name: 'Coherente', 
                 desc: 'Equilibra el corazón.', 
                 instr: 'Inhala y exhala suavemente. El ritmo de oro de la salud.',
-                rhythm: [ {type: 'Inhala', time: 5500}, {type: 'Exhala', time: 5500} ]
+                rhythm: [ {type: 'Inhala', time: 5500, scale: 1.6}, {type: 'Exhala', time: 5500, scale: 0.8} ]
             },
             { 
                 id: 'caja', 
                 name: 'Respiración de Caja', 
                 desc: 'Calma bajo presión.', 
                 instr: 'Usada por Navy SEALs para neutralizar el estrés.',
-                rhythm: [ {type: 'Inhala', time: 4000}, {type: 'Retén', time: 4000}, {type: 'Exhala', time: 4000}, {type: 'Retén', time: 4000} ]
+                rhythm: [ 
+                    {type: 'Inhala', time: 4000, scale: 1.6}, 
+                    {type: 'Retén', time: 4000, scale: 1.6}, 
+                    {type: 'Exhala', time: 4000, scale: 0.8}, 
+                    {type: 'Retén', time: 4000, scale: 0.8} 
+                ]
             },
             { 
                 id: '478', 
                 name: 'Técnica 4-7-8', 
                 desc: 'Para dormir mejor.', 
                 instr: 'Relaja el sistema nervioso profundamente antes de descansar.',
-                rhythm: [ {type: 'Inhala', time: 4000}, {type: 'Retén', time: 7000}, {type: 'Exhala', time: 8000} ]
+                rhythm: [ 
+                    {type: 'Inhala', time: 4000, scale: 1.4}, 
+                    {type: 'Retén', time: 7000, scale: 1.4}, 
+                    {type: 'Exhala', time: 8000, scale: 0.8} 
+                ]
             },
             { 
                 id: 'nadi', 
                 name: 'Nadi Shodhana', 
                 desc: 'Claridad mental.', 
                 instr: 'Alterna fosas: tapa derecha e inhala izquierda, tapa izquierda y exhala derecha.',
-                rhythm: [ {type: 'Inhala', time: 6000}, {type: 'Exhala', time: 6000} ]
+                rhythm: [ {type: 'Inhala', time: 6000, scale: 1.5}, {type: 'Exhala', time: 6000, scale: 0.8} ]
             }
         ];
 
@@ -62,7 +77,6 @@
             const ambientAudio = useRef(null);
             const finalAudio = useRef(null);
 
-            // Manejo de fases de respiración
             useEffect(() => {
                 if (screen === 'exercise' && selectedEx) {
                     const currentPhase = selectedEx.rhythm[phaseIdx];
@@ -73,12 +87,11 @@
                 }
             }, [screen, phaseIdx, selectedEx]);
 
-            // Temporizador de 5 minutos y audio
             useEffect(() => {
                 let mainTimer;
                 if (screen === 'exercise' && timeLeft > 0) {
                     if (ambientAudio.current) {
-                        ambientAudio.current.volume = 0.4;
+                        ambientAudio.current.volume = 0.6; // Ajustado a 60%
                         ambientAudio.current.play();
                     }
                     mainTimer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
@@ -86,7 +99,7 @@
                     setScreen('end');
                     if (ambientAudio.current) ambientAudio.current.pause();
                     if (finalAudio.current) {
-                        finalAudio.current.volume = 0.4; // Mismo volumen que ambiente
+                        finalAudio.current.volume = 0.6; // Ajustado a 60%
                         finalAudio.current.play();
                     }
                 }
@@ -100,44 +113,57 @@
                 setScreen('exercise');
             };
 
+            const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+
             return (
-                <div className={`h-screen w-full flex flex-col items-center justify-between p-8 bg-transition 
-                    ${screen === 'exercise' ? (selectedEx.rhythm[phaseIdx].type === 'Inhala' ? 'bg-blue-50' : 'bg-green-50') : 'bg-stone-50'}`}>
+                <div className={`h-screen w-full flex flex-col items-center justify-between p-10 bg-transition 
+                    ${screen === 'exercise' ? (selectedEx.rhythm[phaseIdx].type === 'Inhala' ? 'bg-blue-50' : 'bg-emerald-50') : 'bg-stone-50'}`}>
                     
                     <audio ref={ambientAudio} src="naturaleza.mp3" loop />
                     <audio ref={finalAudio} src="musica.mp3" />
 
-                    <header className="text-center mt-4">
-                        <h1 className="text-3xl font-thin tracking-[0.4em] text-stone-400 uppercase">Athair</h1>
+                    <header className="text-center mt-6 fade-in">
+                        <h1 className="text-4xl font-light tracking-[0.3em] text-stone-700 uppercase">Athair</h1>
                         {screen === 'exercise' && (
-                            <p className="text-stone-300 text-[10px] mt-2 tracking-widest uppercase">
-                                {selectedEx.name} • {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                            <p className="text-stone-500 text-sm mt-3 font-medium tracking-widest uppercase">
+                                {selectedEx.name} • {formatTime(timeLeft)}
                             </p>
                         )}
                     </header>
 
-                    <main className="flex-1 flex items-center justify-center w-full max-w-md">
+                    <main className="flex-1 flex items-center justify-center w-full max-w-lg">
                         {screen === 'menu' && (
-                            <div className="grid gap-4 w-full fade-in">
+                            <div className="grid gap-6 w-full fade-in">
                                 {EXERCISES.map(ex => (
                                     <button key={ex.id} onClick={() => startExercise(ex)}
-                                        className="text-left p-6 rounded-3xl bg-white/40 border border-white/60 backdrop-blur-sm hover:bg-white/80 transition-all shadow-sm group">
-                                        <h2 className="text-stone-500 font-light tracking-wide text-lg">{ex.name}</h2>
-                                        <p className="text-stone-400 text-xs mt-1">{ex.desc}</p>
-                                        <p className="text-stone-300 text-[10px] mt-3 opacity-0 group-hover:opacity-100 transition-opacity italic">{ex.instr}</p>
+                                        className="text-left p-8 rounded-[2rem] bg-white/60 border border-white/80 backdrop-blur-md hover:bg-white/90 transition-all shadow-md group">
+                                        <h2 className="text-stone-700 font-semibold tracking-tight text-xl">{ex.name}</h2>
+                                        <p className="text-stone-600 text-sm mt-2 leading-relaxed">{ex.desc}</p>
+                                        <p className="text-stone-400 text-xs mt-4 opacity-0 group-hover:opacity-100 transition-opacity italic">{ex.instr}</p>
                                     </button>
                                 ))}
                             </div>
                         )}
 
                         {screen === 'exercise' && (
-                            <div className="flex flex-col items-center">
-                                <div className={`orb rounded-full bg-white shadow-[0_0_80px_rgba(255,255,255,0.9)] blur-2xl opacity-60
-                                    ${selectedEx.rhythm[phaseIdx].type === 'Inhala' ? 'scale-[1.8]' : 
-                                      selectedEx.rhythm[phaseIdx].type === 'Exhala' ? 'scale-[0.8]' : 'scale-[1.3]'}`}
-                                    style={{ transitionDuration: `${selectedEx.rhythm[phaseIdx].time}ms` }}>
+                            <div className="relative flex items-center justify-center">
+                                {/* Círculo Guía (Animación Pulmonar) */}
+                                <div className="breathing-circle absolute rounded-full border-[3px] border-stone-300/40 w-64 h-64 shadow-[0_0_40px_rgba(255,255,255,0.5)]"
+                                     style={{ 
+                                         transform: `scale(${selectedEx.rhythm[phaseIdx].scale})`,
+                                         transitionDuration: `${selectedEx.rhythm[phaseIdx].time}ms` 
+                                     }}>
                                 </div>
-                                <p className="absolute text-stone-400 tracking-[0.5em] uppercase font-light text-xl">
+                                
+                                {/* Resplandor central */}
+                                <div className="breathing-circle rounded-full bg-white/80 blur-xl w-32 h-32"
+                                     style={{ 
+                                         transform: `scale(${selectedEx.rhythm[phaseIdx].scale})`,
+                                         transitionDuration: `${selectedEx.rhythm[phaseIdx].time}ms` 
+                                     }}>
+                                </div>
+
+                                <p className="absolute text-stone-700 tracking-[0.4em] uppercase font-medium text-4xl fade-in">
                                     {selectedEx.rhythm[phaseIdx].type}
                                 </p>
                             </div>
@@ -145,13 +171,13 @@
 
                         {screen === 'end' && (
                             <div className="text-center fade-in">
-                                <h2 className="text-3xl font-thin italic text-stone-400 mb-8">Nos vemos pronto.</h2>
-                                <button onClick={() => setScreen('menu')} className="text-[10px] text-stone-300 uppercase tracking-widest border-b border-stone-200 pb-1">Volver al inicio</button>
+                                <h2 className="text-4xl font-light italic text-stone-600 mb-10">Nos vemos pronto.</h2>
+                                <button onClick={() => setScreen('menu')} className="text-xs text-stone-400 font-semibold uppercase tracking-widest border-b-2 border-stone-200 pb-2 hover:text-stone-600 transition-colors">Volver al inicio</button>
                             </div>
                         )}
                     </main>
 
-                    <footer className="mb-4 text-[9px] tracking-[0.2em] text-stone-300 uppercase text-center leading-loose">
+                    <footer className="mb-6 text-xs tracking-widest text-stone-400 uppercase text-center font-medium opacity-60">
                         {screen === 'exercise' ? selectedEx.instr : "Diseñado para el bienestar de la familia"}
                     </footer>
                 </div>
